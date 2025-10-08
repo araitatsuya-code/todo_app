@@ -6,7 +6,7 @@ import (
 
 type Todo struct {
 	ID int `json:"id"`
-	Title string `string:"title"`
+	Title string `json:"title"`
 	Completed bool `json:"completed"`
 }
 
