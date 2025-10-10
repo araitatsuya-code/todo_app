@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,6 +42,29 @@ func createTodo(c *gin.Context) {
 	c.JSON(201, newTodo)
 }
 
+func getTodo(c *gin.Context) {
+	idStr := c.Param("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "無効なIDです",
+		})
+		return
+	}
+
+	for _, todo := range todos {
+		if todo.ID == id {
+			c.JSON(200, todo)
+			return
+		}
+	}
+
+	c.JSON(404, gin.H {
+		"error": "Todoが見つかりません",
+	})
+}
+
 
 func main() {
 	initData()
@@ -55,6 +79,7 @@ func main() {
 
 	r.GET("/todos", getTodos)
 	r.POST("/todos", createTodo)
+	r.GET("/todos/:id", getTodo)
 
 	r.Run(":8080")
 }
