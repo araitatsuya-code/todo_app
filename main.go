@@ -25,6 +25,23 @@ func getTodos(c *gin.Context) {
 	})
 }
 
+func createTodo(c *gin.Context) {
+	var newTodo Todo
+
+	if err := c.ShouldBindJSON(&newTodo); err != nil {
+		c.JSON(400, gin.H{
+			"error": "無効な入力です",
+		})
+	}
+
+	newTodo.ID = len(todos) + 1
+
+	todos = append(todos, newTodo)
+
+	c.JSON(201, newTodo)
+}
+
+
 func main() {
 	initData()
 
@@ -37,6 +54,7 @@ func main() {
 	})
 
 	r.GET("/todos", getTodos)
+	r.POST("/todos", createTodo)
 
 	r.Run(":8080")
 }
