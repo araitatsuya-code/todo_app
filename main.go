@@ -65,6 +65,38 @@ func getTodo(c *gin.Context) {
 	})
 }
 
+func updateTodo(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(400, gin.H {
+			"error": "無効なIDです",
+		})
+		return
+	}
+
+	var updateTodo Todo
+	if err := c.ShouldBindJSON(&updateTodo); err != nil {
+		c.JSON(400, gin.H{
+			"error": "無効な入力です",
+		})
+	}
+
+	for i, todo := range todos {
+		if todo.ID == id {
+			updateTodo.ID = id
+			todos[i] = updateTodo
+			
+			c.JSON(200, updateTodo)
+			return
+		}
+	}
+
+	c.JSON(404, gin.H{
+		"error": "Todoが見つかりません",
+	})
+}
+
 
 func main() {
 	initData()
@@ -80,6 +112,7 @@ func main() {
 	r.GET("/todos", getTodos)
 	r.POST("/todos", createTodo)
 	r.GET("/todos/:id", getTodo)
+	r.PUT("/todos/:id", updateTodo)
 
 	r.Run(":8080")
 }
