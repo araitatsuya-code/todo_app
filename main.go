@@ -97,6 +97,32 @@ func updateTodo(c *gin.Context) {
 	})
 }
 
+func deleteTodo(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(400, gin.H {
+			"error": "無効なIDです",
+		})
+		return
+	}
+
+	for i, todo := range todos {
+		if todo.ID == id {
+			todos = append(todos[:i], todos[i+1:]...)
+
+			c.JSON(200, gin.H{
+				"message": "Todoを削除しました",
+			})
+			return
+		}
+	}
+
+	c.JSON(404, gin.H {
+		"error": "Todoが見つかりません",
+	})
+}
+
 
 func main() {
 	initData()
@@ -113,6 +139,7 @@ func main() {
 	r.POST("/todos", createTodo)
 	r.GET("/todos/:id", getTodo)
 	r.PUT("/todos/:id", updateTodo)
+	r.DELETE("/todos/:id", deleteTodo)
 
 	r.Run(":8080")
 }
