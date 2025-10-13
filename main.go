@@ -8,18 +8,24 @@ import (
 )
 
 type Todo struct {
-	ID int `json:"id"`
-	Title string `json:"title"`
-	Completed bool `json:"completed"`
+	ID        int    `json:"id"`
+	Title     string `json:"title" validate:"required,min=1,max=50"`
+	Completed bool   `json:"completed"`
 }
 
+var validate *validator.Validate
+
 var todos []Todo
+var nextID = 1
 
 func initData() {
+	validate = validator.New()
+
 	todos = []Todo{
 		{ID: 1, Title: "Go言語を学ぶ", Completed: false},
 		{ID: 2, Title: "買い物に行く", Completed: true},
 	}
+	nextID = 3
 }
 
 func getTodos(c *gin.Context) {
@@ -33,12 +39,34 @@ func createTodo(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&newTodo); err != nil {
 		c.JSON(400, gin.H{
-			"error": "無効な入力です",
+			"error":   "無効な入力です",
+			"details": err.Error(),
 		})
+		return
 	}
 
-	newTodo.ID = len(todos) + 1
+	if err := validate.Struct(newTodo); err != nil {
+		errors := make([]string, 0)
+		for _, err := range err.(validator.ValidationErrors) {
+			switch err.Tag() {
+			case "required":
+				errors = append(errors, err.Field()+"は必須です")
+			case "min":
+				errors = append(errors, err.Field()+"は最低"+err.Param()+"文字必要です")
+			case "max":
+				errors = append(errors, err.Field()+"は最大"+err.Param()+"文字までです")
+			}
+		}
 
+		c.JSON(400, gin.H{
+			"error":   "バリデーションエラー",
+			"details": errors,
+		})
+		return
+	}
+
+	newTodo.ID = nextID
+	nextID++
 	todos = append(todos, newTodo)
 
 	c.JSON(201, newTodo)
@@ -62,7 +90,7 @@ func getTodo(c *gin.Context) {
 		}
 	}
 
-	c.JSON(404, gin.H {
+	c.JSON(404, gin.H{
 		"error": "Todoが見つかりません",
 	})
 }
@@ -71,7 +99,7 @@ func updateTodo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(400, gin.H {
+		c.JSON(400, gin.H{
 			"error": "無効なIDです",
 		})
 		return
@@ -88,7 +116,7 @@ func updateTodo(c *gin.Context) {
 		if todo.ID == id {
 			updateTodo.ID = id
 			todos[i] = updateTodo
-			
+
 			c.JSON(200, updateTodo)
 			return
 		}
@@ -103,7 +131,7 @@ func deleteTodo(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(400, gin.H {
+		c.JSON(400, gin.H{
 			"error": "無効なIDです",
 		})
 		return
@@ -120,11 +148,10 @@ func deleteTodo(c *gin.Context) {
 		}
 	}
 
-	c.JSON(404, gin.H {
+	c.JSON(404, gin.H{
 		"error": "Todoが見つかりません",
 	})
 }
-
 
 func main() {
 	initData()
