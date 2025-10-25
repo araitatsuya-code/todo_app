@@ -18,7 +18,7 @@ type Todo struct {
 var db *gorm.DB
 var validate *validator.Validate
 
-func initDataBase() {
+func initDatabase() {
 	var err error
 
 	db, err = gorm.Open(sqlite.Open("todo.db"), &gorm.Config{})
@@ -35,16 +35,15 @@ func initDataBase() {
 
 func seedData() {
 	var count int64
-	db.Model(&Todo[]).Count(&count)
+	db.Model(&Todo{}).Count(&count)
 
 	if count == 0 {
 		todos := []Todo{
 			{Title: "Go言語を学ぶ", Completed: false},
-            {Title: "GORMを理解する", Completed: false},
+			{Title: "GORMを理解する", Completed: false},
 		}
+		db.Create(&todos)
 	}
-
-	db.Create(&todos)
 }
 
 var todos []Todo
@@ -61,6 +60,16 @@ func initData() {
 }
 
 func getTodos(c *gin.Context) {
+	var todos []Todo
+
+	result := db.Find(&todos)
+	if result.Error != nil {
+		c.JSON(500, gin.H{
+			"error": "データベースエラー",
+		})
+		return
+	}
+
 	c.JSON(200, gin.H{
 		"todos": todos,
 	})
@@ -140,7 +149,7 @@ func updateTodo(c *gin.Context) {
 	var updateTodo Todo
 	if err := c.ShouldBindJSON(&updateTodo); err != nil {
 		c.JSON(400, gin.H{
-			"error": "無効なJSON形式です",
+			"error":   "無効なJSON形式です",
 			"datails": err.Error(),
 		})
 		return
@@ -160,7 +169,7 @@ func updateTodo(c *gin.Context) {
 		}
 
 		c.JSON(400, gin.H{
-			"error":"バリデーションエラー",
+			"error":   "バリデーションエラー",
 			"datails": errors,
 		})
 		return
@@ -208,7 +217,7 @@ func deleteTodo(c *gin.Context) {
 }
 
 func main() {
-	initData()
+	initDatabase()
 
 	r := gin.Default()
 
