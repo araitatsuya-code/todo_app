@@ -128,7 +128,7 @@ func updateTodo(c *gin.Context) {
 		}
 
 		c.JSON(400, gin.H{
-			"errors":"バリデーションエラー",
+			"error":"バリデーションエラー",
 			"datails": errors,
 		})
 		return
