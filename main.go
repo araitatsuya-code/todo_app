@@ -5,15 +5,47 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Todo struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title" validate:"required,min=2,max=50"`
-	Completed bool   `json:"completed"`
+	ID        int    `json:"id" gorm:"primaryKey"`
+	Title     string `json:"title" validate:"required,min=2,max=50" gorm:"not null"`
+	Completed bool   `json:"completed" gorm:"default:false"`
 }
 
+var db *gorm.DB
 var validate *validator.Validate
+
+func initDataBase() {
+	var err error
+
+	db, err = gorm.Open(sqlite.Open("todo.db"), &gorm.Config{})
+	if err != nil {
+		panic("データベース接続に失敗しました： " + err.Error())
+	}
+
+	db.AutoMigrate(&Todo{})
+
+	validate = validator.New()
+
+	seedData()
+}
+
+func seedData() {
+	var count int64
+	db.Model(&Todo[]).Count(&count)
+
+	if count == 0 {
+		todos := []Todo{
+			{Title: "Go言語を学ぶ", Completed: false},
+            {Title: "GORMを理解する", Completed: false},
+		}
+	}
+
+	db.Create(&todos)
+}
 
 var todos []Todo
 var nextID = 1
