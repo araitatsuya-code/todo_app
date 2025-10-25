@@ -9,7 +9,7 @@ import (
 
 type Todo struct {
 	ID        int    `json:"id"`
-	Title     string `json:"title" validate:"required,min=1,max=50"`
+	Title     string `json:"title" validate:"required,min=2,max=50"`
 	Completed bool   `json:"completed"`
 }
 
@@ -108,8 +108,30 @@ func updateTodo(c *gin.Context) {
 	var updateTodo Todo
 	if err := c.ShouldBindJSON(&updateTodo); err != nil {
 		c.JSON(400, gin.H{
-			"error": "無効な入力です",
+			"error": "無効なJSON形式です",
+			"datails": err.Error(),
 		})
+		return
+	}
+
+	if err := validate.Struct(updateTodo); err != nil {
+		errors := make([]string, 0)
+		for _, err := range err.(validator.ValidationErrors) {
+			switch err.Tag() {
+			case "required":
+				errors = append(errors, err.Field()+"は必須です")
+			case "min":
+				errors = append(errors, err.Field()+"は最低"+err.Param()+"文字必要です")
+			case "max":
+				errors = append(errors, err.Field()+"は最大"+err.Param()+"文字までです")
+			}
+		}
+
+		c.JSON(400, gin.H{
+			"errors":"バリデーションエラー",
+			"datails": errors,
+		})
+		return
 	}
 
 	for i, todo := range todos {
